@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "id": "crome.workspaces",
-  "name": "Colored Workspaces",
-  "version": "2.0.0",
+  "name": "Omarchy GlyphSpaces",
+  "version": "2.0.1",
   "author": "crome",
   "license": "MIT",
-  "description": "Colored workspace dots on the Omarchy bar, with specials in front and a right-click settings panel that Quickshell IPC can open.",
+  "description": "Colored workspace dots on the Omarchy bar, with specials in front and a settings panel that Quickshell IPC can open.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Workspaces.qml"
   },
   "barWidget": {
-    "displayName": "Colored Workspaces",
+    "displayName": "Omarchy GlyphSpaces",
     "description": "Colored dots, specials, and settings on right-click or over IPC",
     "category": "Compositor",
     "allowMultiple": false,

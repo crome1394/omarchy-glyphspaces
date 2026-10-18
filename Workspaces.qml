@@ -2,19 +2,21 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "WorkspaceModel.js" as Model
 
-// Colored workspace dots for the Omarchy bar.
+// Omarchy GlyphSpaces. Colored workspace dots for the Omarchy bar.
 //
 // Specials stay in front of the numbered workspaces. The focused chip is a
-// rounded pill; the others stay bare. Right-click, or Quickshell IPC, opens
-// settings. Nothing here reads the Cachy Quickshell config.
+// rounded pill; the others stay bare. Right-click opens settings.
 Panel {
   id: root
   moduleName: "crome.workspaces"
-  ipcTarget: "crome.workspaces"
+  // Panel registers its own handler on ipcTarget. Leaving that set makes its
+  // open/close/toggle the only calls qs can see. This file owns the target.
+  ipcTarget: ""
   manageIpc: false
 
   readonly property color foreground: bar ? bar.barForeground : Color.foreground
@@ -235,6 +237,26 @@ Panel {
     var next = !!on
     if (next === root.showOnlyActive) return
     root.persistSettings(next, root.savedRows())
+  }
+
+  // shell.summon/hide/toggle pick the bar on the focused monitor. Calling
+  // open() here would only reach whichever copy registered the IPC target.
+  function openOverIpc() {
+    var shell = root.bar && root.bar.shell
+    if (shell && shell.summon && shell.summon(root.moduleName, "")) return
+    root.open()
+  }
+
+  function closeOverIpc() {
+    var shell = root.bar && root.bar.shell
+    if (shell && shell.hide && shell.hide(root.moduleName)) return
+    root.close()
+  }
+
+  function toggleOverIpc() {
+    var shell = root.bar && root.bar.shell
+    if (shell && shell.toggle && shell.toggle(root.moduleName, "")) return
+    root.toggle()
   }
 
   function resetDraft() {
@@ -608,15 +630,15 @@ Panel {
   }
 
   IpcHandler {
-    target: root.ipcTarget
+    target: "crome.workspaces"
 
-    function open(): void { root.open() }
-    function close(): void { root.close() }
-    function show(): void { root.open() }
-    function hide(): void { root.close() }
-    function toggle(): void { root.toggle() }
-    function setShowOnlyActive(enabled: string): string {
-      root.setShowOnly(Model.truthy(enabled))
+    function open(): void { root.openOverIpc() }
+    function close(): void { root.closeOverIpc() }
+    function show(): void { root.openOverIpc() }
+    function hide(): void { root.closeOverIpc() }
+    function toggle(): void { root.toggleOverIpc() }
+    function setShowOnlyActive(value: string): string {
+      root.setShowOnly(Model.truthy(value))
       return root.showOnlyActive ? "on" : "off"
     }
     function toggleShowOnlyActive(): string {
@@ -863,7 +885,7 @@ Panel {
 
           Text {
             textFormat: Text.PlainText
-            text: "Workspaces"
+            text: "Omarchy GlyphSpaces"
             color: Color.popups.text
             font.family: Style.font.family
             font.pixelSize: Style.font.heading

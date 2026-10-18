@@ -1,10 +1,9 @@
-// Workspace list for the Omarchy bar widget.
+// Workspace list for Omarchy GlyphSpaces.
 //
 // Numbered pills keep the order you set. Specials always sit in front of
 // them, and order inside that group is their order on the bar. Occupied
 // workspaces that are not in the list still appear after the numbered pills.
-// Nothing here reads the Cachy Quickshell config. The rules stay in this file
-// so they can be tested without a running shell.
+// The rules stay in this file so they can be tested without a running shell.
 
 var MAX_NUMBERED = 10
 var MAX_SPECIALS = 8

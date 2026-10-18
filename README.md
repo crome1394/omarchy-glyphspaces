@@ -1,14 +1,22 @@
-# Colored Workspaces
+# Omarchy GlyphSpaces
 
 A bar widget for [Omarchy](https://omarchy.org/) that shows Hyprland workspaces as colored dots with their numbers. The focused workspace is a rounded pill. The plugin id is `crome.workspaces`.
 
-The widget is self-contained. It does not read the Cachy Quickshell bar or its saved layout. Install and remove it with the Omarchy plugin commands.
+Install and remove it with the Omarchy plugin commands.
 
 Specials stay in front of the numbered workspaces. Order inside each group is the order on the bar: left to right on a top or bottom bar, top to bottom on a side bar. An occupied workspace that is not in the list still appears after the numbered pills.
 
 Left-click focuses a workspace. Scrolling walks specials in order, then the numbered workspaces. Scrolling forward from the last special closes it. Scrolling back from the lowest numbered workspace opens the last special. Right-click opens settings.
 
 Empty numbered pills stay hidden while **Show only active workspace** is on. The focused workspace still shows. A fresh install starts with that on, and with eight colored dots.
+
+## Screenshots
+
+![Workspaces settings](Workspaces.png)
+
+![Display settings](Display.png)
+
+![Startup settings](startup.png)
 
 ## Install
 
@@ -51,12 +59,14 @@ Arrows follow the list. Enter activates or edits a field. Esc leaves a field, th
 
 ### IPC
 
+Pass `-p /usr/share/omarchy/shell` so the call reaches Omarchy. `open`, `close`, `show`, `hide`, and `toggle` open or close the settings panel on the focused monitor. `setShowOnlyActive` and `toggleShowOnlyActive` print `on` or `off`.
+
 ```bash
-qs ipc call crome.workspaces toggle
-qs ipc call crome.workspaces open
-qs ipc call crome.workspaces close
-qs ipc call crome.workspaces setShowOnlyActive true
-qs ipc call crome.workspaces toggleShowOnlyActive
+qs -p /usr/share/omarchy/shell ipc call crome.workspaces toggle
+qs -p /usr/share/omarchy/shell ipc call crome.workspaces open
+qs -p /usr/share/omarchy/shell ipc call crome.workspaces close
+qs -p /usr/share/omarchy/shell ipc call crome.workspaces setShowOnlyActive true
+qs -p /usr/share/omarchy/shell ipc call crome.workspaces toggleShowOnlyActive
 ```
 
 `show` and `hide` are the same as `open` and `close`.
