@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "crome.workspaces",
   "name": "Omarchy GlyphSpaces",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": "crome",
   "license": "MIT",
   "description": "Colored workspace dots on the Omarchy bar, with specials in front and a settings panel that Quickshell IPC can open.",
@@ -17,7 +17,17 @@
     "allowMultiple": false,
     "defaultSection": "left",
     "defaults": {
-      "showOnlyActive": true
+      "showOnlyActive": true,
+      "slots": [
+        { "id": 1, "kind": "ws", "label": "🟡", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 2, "kind": "ws", "label": "🔵", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 3, "kind": "ws", "label": "🟢", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 4, "kind": "ws", "label": "🔴", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 5, "kind": "ws", "label": "🟠", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 6, "kind": "ws", "label": "🟣", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 7, "kind": "ws", "label": "🟤", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
+        { "id": 8, "kind": "ws", "label": "⚪", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" }
+      ]
     }
   }
 }

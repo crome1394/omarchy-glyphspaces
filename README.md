@@ -10,13 +10,9 @@ Left-click focuses a workspace. Scrolling walks specials in order, then the numb
 
 Empty numbered pills stay hidden while **Show only active workspace** is on. The focused workspace still shows. A fresh install starts with that on, and with eight colored dots.
 
-## Screenshots
+## Screenshot
 
-![Workspaces settings](Workspaces.png)
-
-![Display settings](Display.png)
-
-![Startup settings](startup.png)
+![Omarchy GlyphSpaces settings](settings.png)
 
 ## Install
 

@@ -39,6 +39,7 @@ Panel {
   property var fontOptions: [{ value: "", label: "Bar font" }]
   property bool fontsLoaded: false
   property int focusPolls: 0
+  property bool seededDefaults: false
   property string navZone: "toggle"
   property int navIndex: 0
   property string navAction: "label"
@@ -231,6 +232,24 @@ Panel {
     if (root.bar && root.bar.shell && root.bar.shell.updateEntryInline)
       root.bar.shell.updateEntryInline(root.moduleName, entry)
     root.rebuild()
+  }
+
+  // A fresh bar entry is only { id }. Write the eight emoji workspaces once
+  // so the saved configuration matches what the bar is showing.
+  function entryHasSlots() {
+    var slots = root.settings ? root.settings.slots : null
+    return !!(slots && slots.length > 0)
+  }
+
+  function ensureDefaultConfig() {
+    if (root.seededDefaults) return
+    if (root.entryHasSlots()) {
+      root.seededDefaults = true
+      return
+    }
+    if (!root.bar || !root.bar.shell || !root.bar.shell.updateEntryInline) return
+    root.seededDefaults = true
+    root.persistSettings(Model.truthy(root.setting("showOnlyActive", true)), Model.defaultSlots())
   }
 
   function setShowOnly(on) {
@@ -621,12 +640,15 @@ Panel {
     }
   }
 
+  onBarChanged: root.ensureDefaultConfig()
+
   Component.onCompleted: {
     root.savedSig = Model.signature(root.savedRows())
     root.showOnlyActive = Model.truthy(root.setting("showOnlyActive", true))
     root.resetDraft()
     root.rebuild()
     root.requestSpecialSync()
+    root.ensureDefaultConfig()
   }
 
   IpcHandler {

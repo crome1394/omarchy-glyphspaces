@@ -2,6 +2,13 @@ const test = require("node:test")
 const assert = require("node:assert/strict")
 const Model = require("../WorkspaceModel.js")
 
+test("manifest defaults are the eight emoji workspaces", () => {
+  const manifest = require("../manifest.json")
+  const defaults = manifest.barWidget.defaults
+  assert.equal(defaults.showOnlyActive, true)
+  assert.deepEqual(defaults.slots, Model.defaultSlots())
+})
+
 test("defaults are eight distinct colored dots", () => {
   const slots = Model.defaultSlots()
   assert.equal(slots.length, 8)
