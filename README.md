@@ -8,7 +8,7 @@ Specials stay in front of the numbered workspaces. Order inside each group is th
 
 Left-click focuses a workspace. Scrolling walks specials in order, then the numbered workspaces. Scrolling forward from the last special closes it. Scrolling back from the lowest numbered workspace opens the last special. Right-click opens settings.
 
-Empty numbered pills stay hidden while **Show only active workspace** is on. The focused workspace still shows. A fresh install starts with that on, and with eight colored dots.
+Empty numbered pills stay hidden while **Show only active workspace** is on. The focused workspace still shows. A fresh install starts with that on, and with eight colored dots. A saved row from an earlier install is used when one is already on disk.
 
 ## Screenshot
 
@@ -29,17 +29,7 @@ omarchy plugin disable omarchy.workspaces
 
 Move it with `omarchy bar move crome.workspaces --section <left|center|right>`.
 
-Disable it from the Omarchy menu under Setup, Plugins, or with `omarchy plugin disable crome.workspaces`. Remove it with `omarchy plugin remove crome.workspaces`. Settings live on the widget's entry in `~/.config/omarchy/shell.json` and are removed with it.
-
-To install this checkout without cloning it:
-
-```bash
-rm -rf ~/.config/omarchy/plugins/crome.workspaces
-mkdir -p ~/.config/omarchy/plugins/crome.workspaces
-cp manifest.json Workspaces.qml WorkspaceModel.js LICENSE README.md ~/.config/omarchy/plugins/crome.workspaces/
-omarchy-shell shell rescanPlugins
-omarchy plugin enable crome.workspaces --section left
-```
+Disable it from the Omarchy menu under Setup, Plugins, or with `omarchy plugin disable crome.workspaces`. Remove it with `omarchy plugin remove crome.workspaces`. While the plugin is enabled, the saved row lives on its entry in `~/.config/omarchy/shell.json`. Disabling drops that entry. A copy stays at `~/.local/state/omarchy/crome.workspaces.json`, and enabling the plugin writes the copy back onto the bar. Removing the plugin deletes its files. That copy stays in the state directory, so a later install brings the same row back.
 
 ## Settings
 
@@ -72,6 +62,7 @@ qs -p /usr/share/omarchy/shell ipc call crome.workspaces toggleShowOnlyActive
 ```bash
 node --test test/model.test.js
 omarchy plugin validate .
+qmllint -I "$OMARCHY_PATH/shell" -I /usr/lib/qt6/qml BarWidget.qml Panel.qml
 ```
 
 ## License

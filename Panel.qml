@@ -1,36 +1,27 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
-import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "WorkspaceModel.js" as Model
 
-// Omarchy GlyphSpaces. Colored workspace dots for the Omarchy bar.
-//
-// Specials stay in front of the numbered workspaces. The focused chip is a
-// rounded pill; the others stay bare. Right-click opens settings.
+// Settings for Omarchy GlyphSpaces. BarWidget.qml loads this and anchors it
+// to the bar slot. The shell routes summon and hide through the bar widget.
 Panel {
   id: root
   moduleName: "crome.workspaces"
-  // Panel registers its own handler on ipcTarget. Leaving that set makes its
-  // open/close/toggle the only calls qs can see. This file owns the target.
   ipcTarget: ""
   manageIpc: false
 
-  readonly property color foreground: bar ? bar.barForeground : Color.foreground
+  property var anchorItem: null
+  property var hostWidget: null
+
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
-  readonly property bool vertical: bar ? bar.vertical : false
-  readonly property int barSize: bar ? bar.barSize : (vertical ? Style.bar.sizeVertical : Style.bar.sizeHorizontal)
-  readonly property int inner: Math.max(12, barSize - 4)
   readonly property color muted: Qt.rgba(Color.popups.text.r, Color.popups.text.g, Color.popups.text.b, 0.7)
   readonly property color cardFill: Qt.rgba(1, 1, 1, 0.04)
   readonly property color cardEdge: Qt.rgba(1, 1, 1, 0.08)
   readonly property bool twoColumns: panel.contentWidth >= 720
 
-  property var shownEntries: []
-  property string activeSpecial: ""
   property bool showOnlyActive: true
   property string savedSig: ""
   property var draftRows: []
@@ -38,8 +29,6 @@ Panel {
   property var fontFamilies: []
   property var fontOptions: [{ value: "", label: "Bar font" }]
   property bool fontsLoaded: false
-  property int focusPolls: 0
-  property bool seededDefaults: false
   property string navZone: "toggle"
   property int navIndex: 0
   property string navAction: "label"
@@ -61,6 +50,7 @@ Panel {
   }
 
   function savedRows() {
+    if (root.hostWidget && root.hostWidget.savedRows) return root.hostWidget.savedRows()
     return Model.rowsFromSettings(root.settings || {})
   }
 
@@ -68,214 +58,38 @@ Panel {
     return Model.signature(root.draftRows) !== Model.signature(root.savedRows())
   }
 
-  function workspaceSnapshots() {
-    var out = []
-    try {
-      var values = (Hyprland.workspaces && Hyprland.workspaces.values) ? Hyprland.workspaces.values : []
-      for (var i = 0; i < values.length; i++) {
-        var workspace = values[i]
-        if (!workspace || !(workspace.id > 0)) continue
-        var occupied = false
-        var tops = workspace.toplevels
-        if (tops) {
-          if (typeof tops.count === "number") occupied = tops.count > 0
-          else if (tops.values && typeof tops.values.length === "number") occupied = tops.values.length > 0
-        }
-        out.push({
-          id: workspace.id,
-          occupied: occupied,
-          active: !!workspace.active,
-          focused: !!workspace.focused
-        })
-      }
-    } catch (e) {}
-    return out
-  }
-
-  function focusedId() {
-    try {
-      var focused = Hyprland.focusedWorkspace
-      return (focused && focused.id > 0) ? focused.id : 0
-    } catch (e) {
-      return 0
-    }
-  }
-
-  function rebuild() {
-    var next = []
-    try {
-      next = Model.visibleEntries({
-        slots: root.savedRows(),
-        workspaces: root.workspaceSnapshots(),
-        focusedId: root.focusedId(),
-        showOnlyActive: root.showOnlyActive,
-        activeSpecial: root.activeSpecial
-      })
-    } catch (e) {
-      return
-    }
-    if (JSON.stringify(next) === JSON.stringify(root.shownEntries)) return
-    root.shownEntries = next
-  }
-
-  function specialFromMonitor() {
-    try {
-      var mon = Hyprland.focusedMonitor
-      if (!mon || !mon.lastIpcObject) return root.activeSpecial
-      var sw = mon.lastIpcObject.specialWorkspace
-      if (!sw) return ""
-      var name = typeof sw === "string" ? sw : (sw.name || "")
-      return Model.bareSpecial(name)
-    } catch (e) {
-      return root.activeSpecial
-    }
-  }
-
-  function syncSpecial() {
-    var name = root.specialFromMonitor()
-    if (name !== root.activeSpecial) root.activeSpecial = name
-    root.rebuild()
-  }
-
-  function requestSpecialSync() {
-    try { Hyprland.refreshMonitors() } catch (e) {}
-    specialSync.restart()
-  }
-
-  function monitorMatches(monName) {
-    if (!monName) return true
-    try {
-      var mon = Hyprland.focusedMonitor
-      if (!mon || !mon.name) return true
-      return String(monName) === String(mon.name)
-    } catch (e) {
-      return true
-    }
-  }
-
-  function onHyprEvent(event) {
-    if (!event) return
-    var name = String(event.name || "")
-    if (name === "activespecial" || name === "activespecialv2") {
-      var args = []
-      try { args = event.parse(name === "activespecialv2" ? 3 : 2) || [] } catch (e) { args = [] }
-      var copied = []
-      for (var i = 0; i < args.length; i++) copied.push(String(args[i] || ""))
-      var wsName = name === "activespecialv2" ? (copied[1] || "") : (copied[0] || "")
-      var monName = name === "activespecialv2" ? (copied[2] || "") : (copied[1] || "")
-      if (!root.monitorMatches(monName)) return
-      root.activeSpecial = Model.bareSpecial(wsName)
-      root.requestSpecialSync()
-      root.rebuild()
-      return
-    }
-    if (name === "workspace" || name === "workspacev2"
-        || name === "focusedmon" || name === "focusedmonv2"
-        || name === "createworkspace" || name === "createworkspacev2"
-        || name === "destroyworkspace" || name === "destroyworkspacev2"
-        || name === "moveworkspace" || name === "moveworkspacev2"
-        || name === "activewindow" || name === "activewindowv2"
-        || name === "openwindow" || name === "closewindow") {
-      root.rebuild()
-    }
-  }
-
-  function dispatchAll(actions) {
-    var list = actions || []
-    var parts = []
-    for (var i = 0; i < list.length; i++) {
-      if (!list[i]) continue
-      parts.push("hyprctl dispatch " + Util.shellQuote(list[i]))
-    }
-    if (!parts.length) return
-    if (root.bar && root.bar.run) root.bar.run(parts.join(" && "))
-    else {
-      for (var j = 0; j < list.length; j++) {
-        if (!list[j]) continue
-        try { Hyprland.dispatch(list[j]) } catch (e) {}
-      }
-    }
-  }
-
-  function liveState() {
-    return {
-      slots: root.savedRows(),
-      activeSpecial: root.activeSpecial,
-      focusedId: root.focusedId()
-    }
-  }
-
-  function activate(entry) {
-    root.dispatchAll(Model.activateActions(entry, root.liveState()))
-  }
-
-  function switchRelative(delta) {
-    root.dispatchAll(Model.relativeActions(root.liveState(), delta))
-  }
-
-  function chipTip(entry) {
-    var base = "Right-click for workspace settings"
-    if (entry && entry.isSpecial && entry.title) return entry.title + " · " + base
-    return base
-  }
-
   function persistSettings(showOnly, slots) {
-    var clean = Model.sanitize(slots)
-    var entry = {
-      id: root.moduleName,
-      showOnlyActive: !!showOnly,
-      slots: clean
-    }
-    root.savedSig = Model.signature(clean)
-    root.showOnlyActive = !!showOnly
-    root.settings = entry
-    if (root.bar && root.bar.shell && root.bar.shell.updateEntryInline)
-      root.bar.shell.updateEntryInline(root.moduleName, entry)
-    root.rebuild()
-  }
-
-  // A fresh bar entry is only { id }. Write the eight emoji workspaces once
-  // so the saved configuration matches what the bar is showing.
-  function entryHasSlots() {
-    var slots = root.settings ? root.settings.slots : null
-    return !!(slots && slots.length > 0)
-  }
-
-  function ensureDefaultConfig() {
-    if (root.seededDefaults) return
-    if (root.entryHasSlots()) {
-      root.seededDefaults = true
-      return
-    }
-    if (!root.bar || !root.bar.shell || !root.bar.shell.updateEntryInline) return
-    root.seededDefaults = true
-    root.persistSettings(Model.truthy(root.setting("showOnlyActive", true)), Model.defaultSlots())
+    if (root.hostWidget && root.hostWidget.persistSettings)
+      root.hostWidget.persistSettings(showOnly, slots)
   }
 
   function setShowOnly(on) {
-    var next = !!on
-    if (next === root.showOnlyActive) return
-    root.persistSettings(next, root.savedRows())
+    if (root.hostWidget && root.hostWidget.setShowOnly) root.hostWidget.setShowOnly(on)
+    root.pullShowOnly()
   }
 
-  // shell.summon/hide/toggle pick the bar on the focused monitor. Calling
-  // open() here would only reach whichever copy registered the IPC target.
-  function openOverIpc() {
-    var shell = root.bar && root.bar.shell
-    if (shell && shell.summon && shell.summon(root.moduleName, "")) return
-    root.open()
+  function pullShowOnly() {
+    var next = true
+    if (root.hostWidget) next = !!root.hostWidget.showOnlyActive
+    else next = Model.truthy(root.setting("showOnlyActive", true))
+    if (next !== root.showOnlyActive) root.showOnlyActive = next
   }
 
-  function closeOverIpc() {
-    var shell = root.bar && root.bar.shell
-    if (shell && shell.hide && shell.hide(root.moduleName)) return
-    root.close()
+  function switchPanel(direction) {
+    if (root.bar && typeof root.bar.switchPanelFrom === "function")
+      return root.bar.switchPanelFrom(root.hostWidget || root, direction)
+    return false
   }
 
-  function toggleOverIpc() {
-    var shell = root.bar && root.bar.shell
-    if (shell && shell.toggle && shell.toggle(root.moduleName, "")) return
-    root.toggle()
+  function close() {
+    root.finishEditing(false)
+    root.hideTips()
+    root.controller.hide()
+  }
+
+  function hideTips() {
+    if (root.hostWidget && root.hostWidget.hideTips) root.hostWidget.hideTips()
+    else if (root.bar) root.bar.hideTooltip(root.hostWidget || root)
   }
 
   function resetDraft() {
@@ -341,20 +155,16 @@ Panel {
 
   function refreshPanel() {
     root.ensureFonts(true)
-    root.requestSpecialSync()
-    try { Hyprland.refreshWorkspaces() } catch (e) {}
-    root.rebuild()
+    if (root.hostWidget && root.hostWidget.refreshFromPanel) root.hostWidget.refreshFromPanel()
     if (!root.draftDirty()) root.resetDraft()
   }
 
   function ingestSettings() {
+    root.pullShowOnly()
     var rows = root.savedRows()
     var sig = Model.signature(rows)
     var slotsChanged = sig !== root.savedSig
     root.savedSig = sig
-    var show = Model.truthy(root.setting("showOnlyActive", true))
-    if (show !== root.showOnlyActive) root.showOnlyActive = show
-    root.rebuild()
     if (slotsChanged && (!root.opened || !root.draftDirty())) root.resetDraft()
   }
 
@@ -609,19 +419,10 @@ Panel {
     keyCatcher.forceActiveFocus()
   }
 
-  function close() {
-    root.finishEditing(false)
-    if (root.bar) root.bar.hideTooltip(root)
-    root.controller.hide()
-  }
-
-  function hideTips() {
-    if (root.bar) root.bar.hideTooltip(root)
-  }
-
   onEditKeyChanged: if (root.editKey) Qt.callLater(root.focusEditor)
 
   onSettingsChanged: root.ingestSettings()
+  onHostWidgetChanged: root.pullShowOnly()
 
   onOpenedChanged: {
     root.hideTips()
@@ -640,239 +441,21 @@ Panel {
     }
   }
 
-  onBarChanged: root.ensureDefaultConfig()
+  Connections {
+    target: root.hostWidget
+    function onShowOnlyActiveChanged() { root.pullShowOnly() }
+  }
 
   Component.onCompleted: {
     root.savedSig = Model.signature(root.savedRows())
-    root.showOnlyActive = Model.truthy(root.setting("showOnlyActive", true))
+    root.pullShowOnly()
     root.resetDraft()
-    root.rebuild()
-    root.requestSpecialSync()
-    root.ensureDefaultConfig()
-  }
-
-  IpcHandler {
-    target: "crome.workspaces"
-
-    function open(): void { root.openOverIpc() }
-    function close(): void { root.closeOverIpc() }
-    function show(): void { root.openOverIpc() }
-    function hide(): void { root.closeOverIpc() }
-    function toggle(): void { root.toggleOverIpc() }
-    function setShowOnlyActive(value: string): string {
-      root.setShowOnly(Model.truthy(value))
-      return root.showOnlyActive ? "on" : "off"
-    }
-    function toggleShowOnlyActive(): string {
-      root.setShowOnly(!root.showOnlyActive)
-      return root.showOnlyActive ? "on" : "off"
-    }
-  }
-
-  Timer {
-    id: specialSync
-    interval: 80
-    repeat: false
-    onTriggered: root.syncSpecial()
-  }
-
-  Timer {
-    interval: 200
-    repeat: true
-    running: root.focusPolls < 6
-    onTriggered: {
-      root.focusPolls += 1
-      try { Hyprland.refreshWorkspaces() } catch (e) {}
-      root.requestSpecialSync()
-    }
-  }
-
-  Timer {
-    interval: 4000
-    running: true
-    repeat: true
-    onTriggered: {
-      try { Hyprland.refreshWorkspaces() } catch (e) {}
-      root.requestSpecialSync()
-    }
-  }
-
-  Connections {
-    target: Hyprland.workspaces
-    function onValuesChanged() { root.rebuild() }
-  }
-
-  Connections {
-    target: Hyprland
-    function onFocusedWorkspaceChanged() {
-      root.requestSpecialSync()
-      root.rebuild()
-    }
-    function onFocusedMonitorChanged() {
-      root.requestSpecialSync()
-      root.rebuild()
-    }
-    function onRawEvent(event) { root.onHyprEvent(event) }
-  }
-
-  Connections {
-    target: Hyprland.focusedMonitor
-    function onLastIpcObjectChanged() { root.syncSpecial() }
-  }
-
-  HoverHandler {
-    onHoveredChanged: {
-      if (!root.bar) return
-      if (hovered && !root.opened) root.bar.showTooltip(root, "Right-click for workspace settings")
-      else root.hideTips()
-    }
-  }
-
-  WheelHandler {
-    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-    onWheel: function(event) {
-      var delta = event.angleDelta.y
-      if (delta === 0) delta = event.angleDelta.x
-      if (delta === 0) delta = event.pixelDelta.y
-      if (delta === 0) delta = event.pixelDelta.x
-      if (delta === 0) return
-      root.switchRelative(delta > 0 ? 1 : -1)
-      event.accepted = true
-    }
-  }
-
-  implicitWidth: root.vertical ? root.barSize : Math.max(root.barSize, chipGrid.implicitWidth)
-  implicitHeight: root.vertical ? Math.max(root.barSize, chipGrid.implicitHeight) : root.barSize
-
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.RightButton
-    z: 0
-    onClicked: root.toggle()
-  }
-
-  GridLayout {
-    id: chipGrid
-    z: 1
-    anchors.centerIn: parent
-    columns: root.vertical ? 1 : Math.max(1, root.shownEntries.length)
-    columnSpacing: root.vertical ? 0 : Style.space(2)
-    rowSpacing: root.vertical ? Style.space(2) : 0
-
-    Repeater {
-      id: chipRepeater
-      model: root.shownEntries
-
-      Item {
-        id: chip
-        required property var modelData
-        required property int index
-
-        readonly property var layout: Model.chipLayout({
-          vertical: root.vertical,
-          inner: root.inner,
-          fontPx: Model.effectivePx(modelData ? modelData.fontPx : 0),
-          showNumber: !!(modelData && modelData.showNumber)
-        })
-
-        Layout.alignment: Qt.AlignCenter
-        Layout.preferredWidth: layout.width
-        Layout.preferredHeight: layout.height
-        implicitWidth: layout.width
-        implicitHeight: layout.height
-
-        Rectangle {
-          anchors.fill: parent
-          radius: Math.max(4, Math.round(Math.min(width, height) * 0.45))
-          color: {
-            if (chipMouse.containsMouse && !(modelData && modelData.selected))
-              return Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.22)
-            if (modelData && modelData.selected)
-              return Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
-            return "transparent"
-          }
-          border.width: (modelData && modelData.selected) || chipMouse.containsMouse ? 1 : 0
-          border.color: Color.accent
-        }
-
-        Item {
-          id: pair
-          anchors.centerIn: parent
-          readonly property bool stacked: chip.layout.stack
-          width: stacked
-            ? Math.max(iconBox.width, numberBox.width)
-            : iconBox.width + ((modelData && modelData.showNumber) ? chip.layout.gap + numberBox.width : 0)
-          height: stacked
-            ? iconBox.height + ((modelData && modelData.showNumber) ? chip.layout.gap + numberBox.height : 0)
-            : Math.max(iconBox.height, numberBox.height)
-
-          Item {
-            id: iconBox
-            width: chip.layout.icon
-            height: chip.layout.icon
-            x: pair.stacked ? (pair.width - width) / 2 : 0
-            y: pair.stacked ? 0 : (pair.height - height) / 2
-            Text {
-              anchors.centerIn: parent
-              width: parent.width
-              horizontalAlignment: Text.AlignHCenter
-              verticalAlignment: Text.AlignVCenter
-              textFormat: Text.PlainText
-              text: modelData ? modelData.label : ""
-              color: "#ffffff"
-              font.family: (modelData && modelData.font) ? modelData.font : root.fontFamily
-              font.pixelSize: chip.layout.icon
-              font.bold: false
-            }
-          }
-
-          Item {
-            id: numberBox
-            visible: !!(modelData && modelData.showNumber)
-            width: chip.layout.numberW
-            height: Math.max(chip.layout.number, 1)
-            x: pair.stacked ? (pair.width - width) / 2 : chip.layout.icon + chip.layout.gap
-            y: pair.stacked ? chip.layout.icon + chip.layout.gap : (pair.height - height) / 2
-            Text {
-              anchors.centerIn: parent
-              textFormat: Text.PlainText
-              text: modelData ? modelData.number : ""
-              color: chipMouse.containsMouse ? Color.accent : root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Math.max(chip.layout.number, 1)
-              font.bold: true
-            }
-          }
-        }
-
-        HoverHandler {
-          onHoveredChanged: {
-            if (!hovered || !root.bar || root.opened) return
-            root.bar.showTooltip(root, root.chipTip(modelData))
-          }
-        }
-
-        MouseArea {
-          id: chipMouse
-          anchors.fill: parent
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: function(mouse) {
-            if (mouse.button === Qt.RightButton) {
-              root.hideTips()
-              root.toggle()
-            } else root.activate(modelData)
-          }
-        }
-      }
-    }
   }
 
   KeyboardPanel {
     id: panel
-    anchorItem: root
-    owner: root
+    anchorItem: root.anchorItem
+    owner: root.hostWidget || root
     bar: root.bar
     open: root.opened
     centerOnBar: true
@@ -1470,4 +1053,5 @@ Panel {
       }
     }
   }
+
 }

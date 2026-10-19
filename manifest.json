@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "id": "crome.workspaces",
   "name": "Omarchy GlyphSpaces",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "author": "crome",
   "license": "MIT",
   "description": "Colored workspace dots on the Omarchy bar, with specials in front and a settings panel that Quickshell IPC can open.",
   "kinds": ["bar-widget"],
   "entryPoints": {
-    "barWidget": "Workspaces.qml"
+    "barWidget": "BarWidget.qml"
   },
   "barWidget": {
     "displayName": "Omarchy GlyphSpaces",
