@@ -2,31 +2,34 @@
   "schemaVersion": 1,
   "id": "crome.workspaces",
   "name": "Omarchy GlyphSpaces",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "author": "crome",
   "license": "MIT",
-  "description": "Colored workspace dots on the Omarchy bar, with specials in front and a settings panel that Quickshell IPC can open.",
+  "description": "Colored workspace pills for the Omarchy bar. Choose how many numbered workspaces to keep, put one special in front, and give each pill a symbol, an emoji, and a label. Set the font, size, bold, italic, and color per workspace, hide inactive pills, turn the numbers on or off, follow the Omarchy theme, and import or export the setup.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
     "displayName": "Omarchy GlyphSpaces",
-    "description": "Colored dots, specials, and settings on right-click or over IPC",
+    "description": "Colored pills with a symbol, a label, a font, a color, and one special workspace",
     "category": "Compositor",
     "allowMultiple": false,
     "defaultSection": "left",
     "defaults": {
       "showOnlyActive": true,
+      "respectTheme": false,
+      "showNumbers": true,
+      "workspaceGap": -1,
       "slots": [
-        { "id": 1, "kind": "ws", "label": "🟡", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 2, "kind": "ws", "label": "🔵", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 3, "kind": "ws", "label": "🟢", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 4, "kind": "ws", "label": "🔴", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 5, "kind": "ws", "label": "🟠", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 6, "kind": "ws", "label": "🟣", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 7, "kind": "ws", "label": "🟤", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" },
-        { "id": 8, "kind": "ws", "label": "⚪", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "" }
+        { "id": 1, "kind": "ws", "label": "🟡", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 2, "kind": "ws", "label": "🔵", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 3, "kind": "ws", "label": "🟢", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 4, "kind": "ws", "label": "🔴", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 5, "kind": "ws", "label": "🟠", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 6, "kind": "ws", "label": "🟣", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 7, "kind": "ws", "label": "🟤", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false },
+        { "id": 8, "kind": "ws", "label": "⚪", "caption": "", "font": "Noto Color Emoji", "fontPx": 14, "specialName": "", "title": "", "color": "", "bold": false, "italic": false }
       ]
     }
   }
