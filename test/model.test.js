@@ -485,6 +485,20 @@ test("settings export and import round-trip", () => {
   assert.equal(Model.importSettings("{"), null)
   assert.equal(Model.importSettings("{\"plugin\":\"other\",\"slots\":[{\"id\":1}]}"), null)
   assert.equal(Model.importSettings("{\"slots\":[]}"), null)
+  assert.equal(Model.importSettings("{\"plugin\":\"crome.workspaces\",\"slots\":{\"length\":1000000000000}}"), null)
+  assert.equal(Model.sanitize({ length: 1000000000000 }).length, 0)
+  const sparse = []
+  sparse.length = 100000
+  sparse[0] = { id: 1, kind: "ws", label: "A" }
+  sparse[11] = { id: 2, kind: "ws", label: "past-cap" }
+  const capped = Model.sanitize(sparse)
+  assert.equal(capped.length, 1)
+  assert.equal(capped[0].label, "A")
+  const many = []
+  for (let i = 1; i <= 30; i++) many.push({ id: i, kind: "ws", label: "n" + i })
+  const trimmed = Model.importSettings(JSON.stringify({ plugin: "crome.workspaces", slots: many }))
+  assert.equal(trimmed.slots.length, 10)
+  assert.equal(trimmed.slots.some((slot) => slot.id > 10), false)
 })
 
 test("emoji search fits the symbol field and the label can be cleared from the keyboard", () => {

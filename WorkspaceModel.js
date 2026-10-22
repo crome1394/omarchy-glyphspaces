@@ -31,10 +31,13 @@ var DOTS = [
   "\uD83D\uDFE6"
 ]
 
-function asArray(value) {
-  if (!value || typeof value.length !== "number") return []
+function asArray(value, limit) {
+  if (!Array.isArray(value)) return []
+  var n = value.length
+  if (typeof n !== "number" || n !== n || n < 0 || n === Infinity) return []
+  if (typeof limit === "number" && limit >= 0 && n > limit) n = limit
   var out = []
-  for (var i = 0; i < value.length; i++) out.push(value[i])
+  for (var i = 0; i < n; i++) out.push(value[i])
   return out
 }
 
@@ -179,7 +182,7 @@ function specialNameOf(raw) {
 }
 
 function sanitize(slots) {
-  var list = asArray(slots)
+  var list = asArray(slots, MAX_NUMBERED + MAX_SPECIALS)
   var specials = []
   var numbered = []
   var seenName = {}
@@ -312,7 +315,7 @@ function signature(slots) {
 function rowsFromSettings(settings) {
   var src = settings || {}
   var stored = src.slots
-  var hasStored = !!(stored && typeof stored.length === "number" && stored.length > 0)
+  var hasStored = Array.isArray(stored) && stored.length > 0
   var rows = hasStored ? sanitize(stored) : defaultSlots(DEFAULT_COUNT)
   if (hasStored && src.showMagic === true && !hasSpecial(rows)) {
     var legacy = {
@@ -802,7 +805,7 @@ function faceEntry(slot, selected, occupiedFlag) {
 function visibleEntries(state) {
   var source = state || {}
   var slots = rowsFromSettings({ slots: source.slots })
-  if (source.slots && source.slots.length) slots = sanitize(source.slots)
+  if (Array.isArray(source.slots) && source.slots.length) slots = sanitize(source.slots)
   var byId = {}
   var workspaces = asArray(source.workspaces)
   for (var i = 0; i < workspaces.length; i++) {
@@ -1202,7 +1205,7 @@ function importSettings(text) {
   if (!parsed || typeof parsed !== "object") return null
   if (parsed.plugin && parsed.plugin !== "crome.workspaces") return null
   var slots = parsed.slots
-  if (!slots || typeof slots.length !== "number") return null
+  if (!Array.isArray(slots) || slots.length < 1) return null
   var clean = sanitize(slots)
   if (!clean.length) return null
   var showOnly = parsed.showOnlyActive
